@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sound & Signal: removing frequencies changes the sound. Shape a square wave, sawtooth or noise with low-pass, high-pass and band-pass filters, and watch the Bode plot, waveform and harmonics change.">
+  <title>Filters & Equalizers — Oscilloscope Lab</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="filters">
+
+  <header class="page-header">
+    <h1 class="neon-title" data-text="Filters &amp; Equalizers">Filters &amp; Equalizers</h1>
+    <p class="page-lede">Removing frequencies changes the sound.</p>
+  </header>
+
+  <!-- Interactive demo -->
+  <section class="section demo" aria-labelledby="lab-title">
+    <h2 class="section-heading" id="lab-title">Filter Lab</h2>
+    <p class="demo-intro">Pick a source, then shape it with a filter. The Bode plot, the waveform and the harmonics all change together, and RUN lets you hear the result. Use BYPASS to switch back to the original sound and compare.</p>
+
+    <div class="hero-container">
+      <!-- Left: three linked displays -->
+      <div class="scope-screen">
+        <div class="scope-header">
+          <span>BODE · gain in dB vs frequency in Hz</span>
+          <span id="bodeInfo">LOW-PASS · fc 1.00 kHz · order 4</span>
+        </div>
+        <div class="display-box display-box--bode">
+          <canvas id="bodeCanvas" class="scope-canvas" role="img" aria-label="Bode magnitude plot of the filter"></canvas>
+        </div>
+        <div class="scope-footer">
+          <span id="bodeSlope">Roll-off: −24 dB/octave (−80 dB/decade)</span>
+          <span id="bodeState"></span>
+        </div>
+
+        <div class="scope-header lab-head">
+          <span id="scopeSource">220 Hz · SQUARE</span>
+          <span id="scopeWindow">2 periods · 9.09 ms</span>
+        </div>
+        <div class="display-box display-box--scope">
+          <canvas id="filterScope" class="scope-canvas" role="img" aria-label="Oscilloscope view of the filter input and output"></canvas>
+        </div>
+        <div class="scope-footer">
+          <span class="legend-items">
+            <span class="legend-item legend-target">input</span>
+            <span class="legend-item legend-sum" id="legendOut">output</span>
+          </span>
+        </div>
+
+        <div class="scope-header lab-head">
+          <span>SPECTRUM · relative amplitude</span>
+          <span id="specNote">harmonics at n·f0</span>
+        </div>
+        <div class="spectrum-wrap">
+          <div class="spectrum-display" id="filterSpectrumBox" tabindex="0" role="group" aria-label="Harmonic amplitudes before and after the filter. Use the left and right arrow keys to inspect each harmonic.">
+            <canvas id="filterSpectrum" class="scope-canvas" role="img" aria-label="Bar chart of harmonic amplitudes before and after the filter"></canvas>
+          </div>
+          <div class="spectrum-tip" id="filterTip" role="tooltip" hidden></div>
+        </div>
+        <div class="scope-footer">
+          <span class="legend-items">
+            <span class="legend-item legend-outline">input</span>
+            <span class="legend-item legend-bar">output</span>
+          </span>
+          <span id="specHint">Hover, tap, or use ← → to read a bar</span>
+        </div>
+        <div class="sr-only" id="filterLive" aria-live="polite"></div>
+      </div>
+
+      <!-- Right: front panels -->
+      <div class="panel-stack">
+        <div class="front-panel">
+          <div class="panel-section">
+            <label class="control-label" for="sourceSelect">SOURCE</label>
+            <select id="sourceSelect">
+              <option value="square" selected>Square wave, 220 Hz</option>
+              <option value="sawtooth">Sawtooth wave, 220 Hz</option>
+              <option value="noise">White noise</option>
+            </select>
+          </div>
+
+          <div class="panel-section">
+            <label class="control-label" for="filterVolume">VOL (%)</label>
+            <output class="control-value" id="filterVolumeOut" for="filterVolume" aria-live="off">30%</output>
+            <input type="range" id="filterVolume" min="0" max="1" value="0.3" step="0.01">
+          </div>
+
+          <div class="panel-section">
+            <div class="control-buttons">
+              <button type="button" id="filterPlay">RUN</button>
+              <button type="button" class="toggle-btn" id="bypassBtn" aria-pressed="false">BYPASS</button>
+            </div>
+            <p class="control-hint" id="bypassStatus" aria-live="polite">Filter in the signal path.</p>
+          </div>
+        </div>
+
+        <div class="front-panel">
+          <div class="panel-section">
+            <div class="control-label" id="typeLabel">FILTER TYPE</div>
+            <div class="seg-toggle seg-wide" role="group" aria-labelledby="typeLabel">
+              <button type="button" data-type="lowpass" aria-pressed="true">LOW-PASS</button>
+              <button type="button" data-type="highpass" aria-pressed="false">HIGH-PASS</button>
+              <button type="button" data-type="bandpass" aria-pressed="false">BAND-PASS</button>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <label class="control-label" for="cutoff">CUTOFF (log scale, 20 Hz to 20 kHz)</label>
+            <output class="control-value" id="cutoffOut" for="cutoff" aria-live="off">1.00 kHz</output>
+            <input type="range" id="cutoff" min="0" max="1000" value="566" step="1">
+          </div>
+
+          <div class="panel-section">
+            <label class="control-label" for="orderSelect">ORDER (CASCADED 2ND-ORDER STAGES)</label>
+            <select id="orderSelect">
+              <option value="2">2nd order</option>
+              <option value="4" selected>4th order</option>
+              <option value="8">8th order</option>
+            </select>
+          </div>
+
+          <div class="panel-section">
+            <label class="control-label" for="qSlider">Q (BAND-PASS ONLY)</label>
+            <output class="control-value" id="qOut" for="qSlider" aria-live="off">Q = 2.0</output>
+            <input type="range" id="qSlider" min="0.5" max="20" value="2" step="0.1" disabled>
+          </div>
+        </div>
+
+        <div class="front-panel rc-panel">
+          <div class="panel-section">
+            <div class="control-label">RC CALCULATOR</div>
+            <div class="rc-grid">
+              <label class="control-label" for="rcR">R (RESISTANCE)</label>
+              <label class="control-label" for="rcC">C (CAPACITANCE)</label>
+              <div class="rc-field">
+                <input type="number" id="rcR" value="10" min="0" step="any" inputmode="decimal">
+                <select id="rcRUnit" aria-label="Resistance unit">
+                  <option value="1">Ω</option>
+                  <option value="1000" selected>kΩ</option>
+                </select>
+              </div>
+              <div class="rc-field">
+                <input type="number" id="rcC" value="10" min="0" step="any" inputmode="decimal">
+                <select id="rcCUnit" aria-label="Capacitance unit">
+                  <option value="1e-9" selected>nF</option>
+                  <option value="1e-6">µF</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="control-label control-label--formula">fc = 1 / (2π·R·C)</div>
+            <output class="control-value" id="rcFcOut" aria-live="off">1.59 kHz</output>
+            <div class="control-buttons">
+              <button type="button" id="rcSet">SET CUTOFF</button>
+            </div>
+            <p class="control-hint" id="rcNote" aria-live="polite">One RC stage is a 1st-order filter (−6 dB/octave). The lab uses steeper 2nd-order stages.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1. What a filter does -->
+  <section class="section" aria-labelledby="what-title">
+    <div class="lesson">
+      <div class="lesson-text">
+        <h2 id="what-title">What a filter does</h2>
+        <p>A filter is a circuit that keeps some frequencies and turns others down. Every sound is a mix of frequencies, so a filter changes the mix, and the mix is what you hear as tone.</p>
+        <p>You already use filters. The bass and treble knobs on a stereo are filters: one raises or lowers the low frequencies, the other the high ones. A wall does it too. Low rumbles pass through it but high frequencies are absorbed, so music next door sounds muffled.</p>
+        <p>Try it in the Filter Lab above. A square wave is a stack of harmonics. A low-pass filter removes the high ones, and the buzzy sound turns dull.</p>
+
+        <dl class="terms">
+          <div>
+            <dt>Passband</dt>
+            <dd>The frequencies that get through almost unchanged.</dd>
+          </div>
+          <div>
+            <dt>Stopband</dt>
+            <dd>The frequencies that are turned down a lot.</dd>
+          </div>
+          <div>
+            <dt>Cutoff</dt>
+            <dd>Where the filter starts to take effect. At the cutoff the level is down 3 dB, about 70% of the original.</dd>
+          </div>
+          <div>
+            <dt>Attenuation</dt>
+            <dd>How much a frequency is turned down, usually measured in decibels (dB).</dd>
+          </div>
+        </dl>
+      </div>
+
+      <details class="deep-dive">
+        <summary class="deep-dive-title">Deep dive: the transfer function</summary>
+        <p>A linear filter multiplies each sine wave by a complex number that depends on its frequency. That number is the transfer function, the ratio of output to input.</p>
+        <pre class="formula">H(f) = Y(f) / X(f)
+|H(f)| = gain            gain in dB = 20·log10|H(f)|
+∠H(f)  = phase shift</pre>
+        <p>The magnitude |H| scales the sine wave and the phase ∠H shifts it in time. For a periodic input with sine coefficients b_n at n·f0, the output is:</p>
+        <pre class="formula">y(t) = Σ b_n · |H(n·f0)| · sin(2π·n·f0·t + ∠H(n·f0))</pre>
+        <p>This is exactly how the Filter Lab draws its output waveform and its output harmonics. Each harmonic is scaled by the filter's gain at that frequency, then the scaled sine waves are added back together.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- 2. Low-pass, high-pass, band-pass -->
+  <section class="section" aria-labelledby="types-title">
+    <div class="lesson">
+      <div class="lesson-text">
+        <h2 id="types-title">Low-pass, high-pass, band-pass</h2>
+        <p>A <strong>low-pass</strong> filter passes low frequencies and cuts high ones. A <strong>high-pass</strong> does the opposite. A <strong>band-pass</strong> keeps a band in the middle and cuts both sides.</p>
+        <p>The simplest filter is an RC circuit: one resistor and one capacitor. A capacitor lets fast changes through more easily than slow ones. Put it across the output and high frequencies leak away, which gives a low-pass. Swap the two parts and the lows are blocked instead, which gives a high-pass. Join a high-pass and a low-pass and you get a band-pass.</p>
+        <p>The cutoff is set by fc = 1/(2π·R·C). A bigger resistor or capacitor lowers the cutoff. Type values into the RC calculator in the lab and press SET CUTOFF to try them.</p>
+      </div>
+
+      <details class="deep-dive">
+        <summary class="deep-dive-title">Deep dive: RC filter math</summary>
+        <p class="formula-label">Low-pass RC</p>
+        <pre class="formula">H(jω) = 1 / (1 + jωRC)
+|H(f)| = 1 / √(1 + (f/fc)²)
+fc = 1 / (2πRC)
+phase = −arctan(f/fc)</pre>
+        <p class="formula-label">High-pass RC</p>
+        <pre class="formula">H(jω) = jωRC / (1 + jωRC)
+|H(f)| = (f/fc) / √(1 + (f/fc)²)
+phase = 90° − arctan(f/fc)</pre>
+        <p>At f = fc the gain is 1/√2 ≈ 0.707, which is −3 dB, and the phase is −45° for the low-pass and +45° for the high-pass. Far below fc a low-pass has gain 1; far above it the gain falls by 20 dB for every factor of 10 in frequency.</p>
+        <p>Example: R = 10 kΩ and C = 10 nF give fc = 1/(2π · 10 000 · 10⁻⁸) ≈ 1.59 kHz.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- 3. Order, slope and equalizers -->
+  <section class="section" aria-labelledby="order-title">
+    <div class="lesson">
+      <div class="lesson-text">
+        <h2 id="order-title">Order, slope and equalizers</h2>
+        <p>One RC stage cuts gently. To cut harder, stack stages. The number of stages is the filter's <strong>order</strong>, and a higher order gives a steeper slope, so unwanted frequencies are removed more sharply. Switch ORDER between 2, 4 and 8 in the lab and watch the slope of the Bode plot change.</p>
+        <p>An <strong>equalizer</strong> (EQ) is a set of band filters, each controlling one slice of the spectrum, with its own gain control. A graphic EQ has a row of sliders at fixed frequencies. A parametric EQ also lets you move the center frequency and set the width of each band.</p>
+      </div>
+
+      <details class="deep-dive">
+        <summary class="deep-dive-title">Deep dive: roll-off and Bode plots</summary>
+        <p>Each order adds −20 dB per decade of roll-off, which is about −6 dB per octave.</p>
+        <pre class="formula">slope ≈ −20·N dB/decade = −6·N dB/octave     (N = order)</pre>
+        <ul>
+          <li>N = 1 (one RC stage): −20 dB/decade, −6 dB/octave.</li>
+          <li>N = 2: −40 dB/decade, −12 dB/octave.</li>
+          <li>N = 4: −80 dB/decade, −24 dB/octave.</li>
+          <li>N = 8: −160 dB/decade, −48 dB/octave.</li>
+        </ul>
+        <p><strong>Reading a Bode plot.</strong> The frequency axis is logarithmic, so a fixed number of dB per decade is a straight line. The flat part at 0 dB is the passband. The point where the curve is down 3 dB is the cutoff fc. Beyond it the curve falls along the straight slope. For a band-pass, the peak is at the center frequency and Q = fc / (f_high − f_low), measured between the two −3 dB points, so a higher Q means a narrower band.</p>
+        <p>The lab builds each order from cascaded second-order Butterworth stages (2nd order = 1 stage, 4th = 2, 8th = 4). Butterworth stages give the flattest passband and put every order exactly at −3 dB at fc. For a band-pass, ORDER counts two per stage, and each extra stage gives steeper skirts and a narrower band.</p>
+      </details>
+    </div>
+  </section>
+
+  <script src="js/background.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/components.js"></script>
+
+</body>
+</html>

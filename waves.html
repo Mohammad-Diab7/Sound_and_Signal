@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sound & Signal: every sound is a sum of sine waves. Build square, sawtooth and triangle waves from harmonics and hear the result.">
+  <title>Sound Waves — Oscilloscope Lab</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="waves">
+
+  <header class="page-header">
+    <h1 class="neon-title" data-text="Sound Waves">Sound Waves</h1>
+    <p class="page-lede">Every sound is a sum of sine waves.</p>
+  </header>
+
+  <!-- Interactive demo -->
+  <section class="section demo" aria-labelledby="builder-title">
+    <h2 class="section-heading" id="builder-title">Harmonic Builder</h2>
+    <p class="demo-intro">Pick a target wave, then add harmonics one at a time. Each harmonic is one more sine wave, and the glowing green sum closes in on the dashed amber target. Press RUN to hear exactly the sum you see.</p>
+
+    <div class="hero-container">
+      <!-- Left: scope + spectrum -->
+      <div class="scope-screen">
+        <div class="scope-header">
+          <span id="harmonicReadout">N = 3 harmonics</span>
+          <span id="waveReadout">220 Hz · SQUARE</span>
+        </div>
+        <div class="waveform-display">
+          <canvas id="harmonicScope" class="scope-canvas" role="img" aria-label="Oscilloscope view of the harmonic sum"></canvas>
+        </div>
+        <div class="scope-footer">
+          <span class="legend-items">
+            <span class="legend-item legend-target">target</span>
+            <span class="legend-item legend-sum">sum of harmonics</span>
+          </span>
+          <span id="periodReadout">2 periods · T = 4.55 ms</span>
+        </div>
+
+        <div class="scope-header spectrum-head">
+          <span>SPECTRUM · relative amplitude</span>
+          <div class="seg-toggle" role="group" aria-label="Spectrum y-axis scale">
+            <button type="button" id="specLinear" aria-pressed="true">LINEAR</button>
+            <button type="button" id="specDb" aria-pressed="false">dB</button>
+          </div>
+        </div>
+        <div class="spectrum-wrap">
+          <div class="spectrum-display" id="spectrumDisplay" tabindex="0" role="group" aria-label="Harmonic amplitudes. Use the left and right arrow keys to inspect each harmonic.">
+            <canvas id="spectrumCanvas" class="scope-canvas" role="img" aria-label="Bar chart of harmonic amplitudes"></canvas>
+          </div>
+          <div class="spectrum-tip" id="spectrumTip" role="tooltip" hidden></div>
+        </div>
+        <div class="scope-footer">
+          <span id="spectrumTop">Highest: 5·f0 = 1100 Hz</span>
+          <span>Hover, tap, or use ← → to read a bar</span>
+        </div>
+        <div class="sr-only" id="spectrumLive" aria-live="polite"></div>
+      </div>
+
+      <!-- Right: front panel -->
+      <div class="front-panel">
+        <div class="panel-section">
+          <label class="control-label" for="targetWave">TARGET WAVE</label>
+          <select id="targetWave">
+            <option value="square" selected>Square</option>
+            <option value="sawtooth">Sawtooth</option>
+            <option value="triangle">Triangle</option>
+          </select>
+        </div>
+
+        <div class="panel-section">
+          <label class="control-label" for="harmonics">HARMONICS (SINE WAVES ADDED)</label>
+          <output class="control-value" aria-live="off" id="harmonicsOut" for="harmonics">N = 3</output>
+          <input type="range" id="harmonics" min="1" max="25" value="3" step="1">
+        </div>
+
+        <div class="panel-section">
+          <label class="control-label" for="fundamental">FUNDAMENTAL (Hz)</label>
+          <output class="control-value" aria-live="off" id="fundamentalOut" for="fundamental">220 Hz</output>
+          <input type="range" id="fundamental" min="50" max="1000" value="220" step="1">
+        </div>
+
+        <div class="panel-section">
+          <label class="control-label" for="builderVolume">VOL (%)</label>
+          <output class="control-value" aria-live="off" id="builderVolumeOut" for="builderVolume">30%</output>
+          <input type="range" id="builderVolume" min="0" max="1" value="0.3" step="0.01">
+        </div>
+
+        <div class="panel-section">
+          <div class="control-buttons">
+            <button type="button" id="builderPlay">RUN</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1. What is sound -->
+  <section class="section" aria-labelledby="sound-title">
+    <div class="lesson">
+      <div class="lesson-text">
+        <h2 id="sound-title">What is sound?</h2>
+        <p>Sound is a pressure wave. Something vibrates, such as a guitar string or a speaker cone, and pushes on the air next to it. The air is squeezed a little, then lets go, and that squeeze travels outward. The air itself only wobbles back and forth; the pattern of high and low pressure is what moves.</p>
+        <p>A microphone turns that pressure pattern into a voltage with the same shape. From then on, sound is an electrical signal, and that is where electrical engineering begins.</p>
+
+        <dl class="terms">
+          <div>
+            <dt>Frequency</dt>
+            <dd>How many pressure cycles pass each second, in hertz (Hz). More cycles per second sounds higher in pitch.</dd>
+          </div>
+          <div>
+            <dt>Period</dt>
+            <dd>The time one full cycle takes. Fast waves have short periods.</dd>
+          </div>
+          <div>
+            <dt>Amplitude</dt>
+            <dd>How far the pressure swings above and below normal. Bigger swings sound louder.</dd>
+          </div>
+          <div>
+            <dt>Wavelength</dt>
+            <dd>The distance one cycle stretches across in air. Low notes are physically long.</dd>
+          </div>
+        </dl>
+      </div>
+
+      <details class="deep-dive">
+        <summary class="deep-dive-title">Deep dive: period and wavelength</summary>
+        <p>Period and frequency are reciprocals. Wavelength is the speed of sound divided by the frequency.</p>
+        <pre class="formula">T = 1 / f
+λ = v / f        v ≈ 343 m/s in air at 20 °C</pre>
+        <ul>
+          <li>Concert A, f = 440 Hz: T ≈ 2.27 ms, λ ≈ 0.78 m.</li>
+          <li>Lowest audible tone, f = 20 Hz: λ ≈ 17.2 m.</li>
+          <li>Highest audible tone, f = 20 kHz: λ ≈ 17 mm.</li>
+        </ul>
+        <p>Human hearing spans roughly 20 Hz to 20 kHz, and the upper limit drops with age. The speed of sound rises with temperature: v ≈ 331.3 + 0.606·θ m/s, with θ in °C.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- 2. Harmonics and timbre -->
+  <section class="section" aria-labelledby="timbre-title">
+    <div class="lesson">
+      <div class="lesson-text">
+        <h2 id="timbre-title">Harmonics and timbre</h2>
+        <p>Play the same note on a piano and on a guitar and you can still tell them apart. The pitch is the same, set by the lowest frequency in the sound, called the fundamental. What differs is the timbre, the color of the tone.</p>
+        <p>A real string does not vibrate only as a whole. It also vibrates in halves, thirds, quarters, and so on, all at the same time. Each of these adds a sine wave at a whole-number multiple of the fundamental, called a harmonic. The fundamental sets the pitch. The harmonic mix, how strong each harmonic is compared with the others, shapes the timbre: a bright sound has strong high harmonics, a mellow one has weak ones.</p>
+        <p>Timbre also depends on how a note starts and fades, but the harmonic mix is its main fingerprint. You can hear the effect in the Harmonic Builder above: switch between square and sawtooth at the same fundamental. The pitch stays put and the tone changes.</p>
+      </div>
+
+      <details class="deep-dive">
+        <summary class="deep-dive-title">Deep dive: the harmonic series</summary>
+        <p>Harmonic n sits at n times the fundamental frequency.</p>
+        <pre class="formula">f_n = n · f0        n = 1, 2, 3, …</pre>
+        <p>For f0 = 220 Hz the first harmonics are 220, 440, 660, 880 and 1100 Hz. Any signal that repeats with period T0 = 1/f0 contains only frequencies that are whole multiples of f0.</p>
+        <p>An ideal string of length L fixed at both ends has modes at f_n = n·c/(2L), where c is the wave speed on the string. Real stiff strings, such as piano strings, have partials slightly sharper than n·f0 (inharmonicity).</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- 3. Building waves from sines -->
+  <section class="section" aria-labelledby="fourier-title">
+    <div class="lesson">
+      <div class="lesson-text">
+        <h2 id="fourier-title">Building waves from sines</h2>
+        <p>In the early 1800s Joseph Fourier showed that any repeating wave can be built by adding sine waves at f0, 2·f0, 3·f0 and so on, each with its own size. Change the sizes and you change the shape.</p>
+        <p>Three classic shapes show it well:</p>
+        <ul class="plain-list">
+          <li><strong>Square:</strong> odd harmonics only, each weaker than the last (1, 1/3, 1/5, …).</li>
+          <li><strong>Sawtooth:</strong> every harmonic, fading as 1/n (1, 1/2, 1/3, …).</li>
+          <li><strong>Triangle:</strong> odd harmonics only, but they die away much faster (1, 1/9, 1/25, …), so it is close to a plain sine and sounds mellow.</li>
+        </ul>
+        <p>In the Harmonic Builder, a few harmonics give a rounded wave. Add more and the corners sharpen and the sound gets brighter.</p>
+      </div>
+
+      <details class="deep-dive">
+        <summary class="deep-dive-title">Deep dive: Fourier series and Gibbs</summary>
+        <p class="formula-label">Square wave: odd harmonics, amplitude 1/n</p>
+        <pre class="formula">x(t) = (4/π) Σ_{k=1..∞} sin(2π(2k−1)f0·t)/(2k−1)</pre>
+        <p class="formula-label">Sawtooth wave: all harmonics, amplitude 1/n</p>
+        <pre class="formula">x(t) = (2/π) Σ_{k=1..∞} (−1)^{k+1} sin(2πk·f0·t)/k</pre>
+        <p class="formula-label">Triangle wave: odd harmonics, amplitude 1/n², alternating sign</p>
+        <pre class="formula">x(t) = (8/π²) Σ_{k=1..∞} (−1)^{k+1} sin(2π(2k−1)f0·t)/(2k−1)²</pre>
+        <p>The builder plays the first N terms (k = 1…N) of these sums. For square and triangle, N terms reach harmonic 2N−1. A speaker system cannot play partials above half its sample rate (about 22–24 kHz), so at a high fundamental with many harmonics the scope can show a little more detail than you hear.</p>
+        <p><strong>Gibbs phenomenon.</strong> Near a jump, the partial sum overshoots by about 9% of the jump height. For a ±1 square wave that is a peak of about 1.18. Adding more terms squeezes the ripples closer to the jump, but the overshoot never shrinks. Try the square wave at N = 25 to see it. The triangle wave has no jumps, so it has no overshoot and converges quickly.</p>
+      </details>
+    </div>
+  </section>
+
+  <script src="js/background.js"></script>
+  <script src="js/waves.js"></script>
+  <script src="js/components.js"></script>
+
+</body>
+</html>

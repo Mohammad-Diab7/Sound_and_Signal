@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sound & Signal: Retro lab oscilloscope for audio engineering education.">
+  <title>Sound & Signal — Oscilloscope Lab</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="home">
+
+  <!-- Hero Section: Oscilloscope Layout -->
+  <section class="hero">
+    <div class="hero-heading">
+      <h1 class="neon-title" data-text="Sound &amp; Signal">Sound &amp; Signal</h1>
+      <p class="hero-tagline">Real-time Signal Analysis Lab</p>
+    </div>
+
+    <!-- Intro: the readout types itself once (js/intro.js); the full text is already here for no-JS and screen readers -->
+    <div class="intro">
+      <p class="intro-readout" id="introReadout"><span class="sr-only">SIGNAL DETECTED</span><span id="introTyped" aria-hidden="true">SIGNAL DETECTED</span><span class="intro-cursor" aria-hidden="true">_</span></p>
+      <p>Every sound you've ever heard was, at some point, just a signal: a tiny voltage wiggling back and forth. It's everywhere, all the time, completely invisible.</p>
+      <p>Not here.</p>
+      <p>Turn up your volume. Press RUN. Watch the invisible take shape on the screen, then follow the signal deeper: break sound into its hidden ingredients, and learn how engineers reshape it with filters.</p>
+      <p>Fair warning: once you see sound as a sum of sine waves, you'll never hear music the same way again.</p>
+    </div>
+
+    <div class="hero-container">
+      <!-- Left: Oscilloscope Screen -->
+      <div class="scope-screen">
+        <div class="scope-header">
+          <span>CH1</span>
+          <span id="scopeFreq">440 Hz · Sine</span>
+        </div>
+        <div class="waveform-display">
+          <canvas id="waveformCanvas" role="img" aria-label="Oscilloscope view of the generated tone"></canvas>
+        </div>
+        <div class="scope-footer">
+          <span id="scopeTimeDiv">1 ms/div</span>
+          <span id="scopePeriod">T = 2.27 ms</span>
+        </div>
+      </div>
+
+      <!-- Right: Front Panel Controls -->
+      <div class="front-panel">
+        <div class="panel-section">
+          <div class="control-label">WAVEFORM</div>
+          <select id="waveType">
+            <option value="sine">SIN</option>
+            <option value="square">SQU</option>
+            <option value="sawtooth">SAW</option>
+            <option value="triangle">TRI</option>
+          </select>
+        </div>
+
+        <div class="panel-section">
+          <label class="control-label" for="timeDiv">TIME/DIV</label>
+          <select id="timeDiv">
+            <option value="0.1">0.1 ms/div</option>
+            <option value="0.2">0.2 ms/div</option>
+            <option value="0.5">0.5 ms/div</option>
+            <option value="1" selected>1 ms/div</option>
+            <option value="2">2 ms/div</option>
+            <option value="5">5 ms/div</option>
+          </select>
+        </div>
+
+        <div class="panel-section">
+          <div class="control-label">FREQ (Hz)</div>
+          <div class="control-value" id="frequencyDisplay">440</div>
+          <input type="range" id="frequency" min="20" max="4000" value="440" step="1">
+        </div>
+
+        <div class="panel-section">
+          <div class="control-label">VOL (%)</div>
+          <div class="control-value" id="volumeDisplay">30</div>
+          <input type="range" id="volume" min="0" max="1" value="0.3" step="0.01">
+        </div>
+
+        <div class="panel-section">
+          <div class="control-buttons">
+            <button id="playButton">RUN</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Channels Section (Topics as CH1-CH2) -->
+  <section class="section">
+    <div class="container">
+      <div class="section-title">
+        <h2>CHANNELS</h2>
+      </div>
+      <div class="channel-grid">
+
+        <a href="waves.html" class="channel-card">
+          <div class="channel-label">CH1</div>
+          <div class="channel-title">Sound Waves</div>
+          <div class="channel-waveform">
+            <canvas id="preview-ch1" width="250" height="60"></canvas>
+          </div>
+          <p class="channel-desc">Longitudinal waves, frequency, wavelength, amplitude in air</p>
+          <span class="channel-link">→ EXPLORE</span>
+        </a>
+
+        <a href="filters.html" class="channel-card">
+          <div class="channel-label">CH2</div>
+          <div class="channel-title">Filters & EQ</div>
+          <div class="channel-waveform">
+            <canvas id="preview-ch2" width="250" height="60"></canvas>
+          </div>
+          <p class="channel-desc">Frequency response shaping, interactive equalizer demo</p>
+          <span class="channel-link">→ EXPLORE</span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Scripts -->
+  <script src="js/background.js"></script>
+  <script src="js/tone-generator.js"></script>
+  <script src="js/channel-previews.js"></script>
+  <script src="js/intro.js"></script>
+  <script src="js/components.js"></script>
+
+</body>
+</html>
